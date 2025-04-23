@@ -9,13 +9,24 @@ class Critter(FieldAgent):
         super().__init__(model)
         
         self.sight_range = max(sight_range, 1)
-        self.velocity = np.zeros(2)
+        self.velocity = np.array(random_initial_velocity())
         self.nest = nest
         
     def step(self):
         super().step()
-        print(f"{self.unique_id} - beep")
+        self.move_by_velocity()
 
-    def do_move(self):
-        raise NotImplementedError("Critters cannot move yet!!")
+    def move_by_velocity(self):
+        self.move(*self.velocity)
 
+def random_initial_velocity():
+    coords = [0, 0]
+    
+    for i in range(2):
+        coords[np.random.randint(0,2)] += 1
+        
+    for i in range(2):
+        if np.random.randint(0,2) == 1:
+            coords[i] *= -1
+    
+    return coords

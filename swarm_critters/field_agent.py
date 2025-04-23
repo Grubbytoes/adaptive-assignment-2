@@ -10,10 +10,15 @@ class FieldAgent(mesa.Agent):
         
         self._space = None
     
+    def move(self, x, y):
+        new_x = self.pos[0] + x
+        new_y = self.pos[1] + y
+        
+        self._space.move_agent(self, (new_x, new_y))
+    
     def step(self):
         self.step_count += 1
     
-        
     def relative_position_of(self, other: mesa.Agent):
         x_relative = int(other.pos[0] - self.pos[0])
         y_relative = int(other.pos[1] - self.pos[1])
