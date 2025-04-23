@@ -25,19 +25,26 @@ class FieldAgent(mesa.Agent):
         
         return (x_relative, y_relative)
     
+    # CONTINUOUS
     def get_neighbors(self, r):
         if not self.is_placed():
             return
         
-        vision = []
-        field_of_vision = self._space.get_neighbors(self.pos, True, radius=r)
+        neighbors = self._space.get_neighbors(self.pos, r, False) 
+        return neighbors
+    
+    # DISCREET
+    # def get_neighbors(self, r):
+    #     if not self.is_placed():
+    #         return
         
-        for other in field_of_vision:
-            # other_position = self.relative_position_of(other)
-            # distance = abs(other_position[0]) + abs(other_position[1])
-            vision.append(other)
+    #     vision = []
+    #     field_of_vision = self._space.get_neighbors(self.pos, True, radius=r)
         
-        return vision
+    #     for other in field_of_vision:
+    #         vision.append(other)
+        
+    #     return vision
     
     def is_placed(self):
         return self._space != None

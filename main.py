@@ -30,13 +30,11 @@ def draw_field(field: Field, delay=40):
         if agent.pos is None:
             continue
         
-        agent_representation = pygame.Rect(
+        agent_coords = (
             agent.pos[0] * SCALE,
             agent.pos[1] * SCALE,
-            SCALE,
-            SCALE
         )
-        pygame.draw.rect(screen, agent.colour, agent_representation)
+        pygame.draw.circle(screen, agent.colour, agent_coords, SCALE/2)
     
     pygame.time.delay(delay)
     pygame.display.flip()       

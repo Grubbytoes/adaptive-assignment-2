@@ -25,14 +25,12 @@ class EnvironmentManager:
         )
         
         # 2. generate critters around the nest
-        nest_neighbourhood = list(self.field.space.get_neighborhood(
-            nest.pos,
-            False, 
-            False,
-            int(sqrt(critter_count))*2
-        ))
-        random.shuffle(nest_neighbourhood)
-        for pos, i in zip(nest_neighbourhood, range(critter_count)):
+        max_nest_distance = int(sqrt(critter_count))
+        for i in range(critter_count):
+            pos = (
+                random.randint(nest.pos[0] - max_nest_distance, nest.pos[0] + max_nest_distance),
+                random.randint(nest.pos[1] - max_nest_distance, nest.pos[1] + max_nest_distance)
+            )
             new_critter = Critter(self.field, nest)
             self.field.place_agent(new_critter, *pos)
         
@@ -42,17 +40,11 @@ class EnvironmentManager:
             flower_position = self.random_position()
             self.field.place_agent(new_flower, *flower_position)
     
-    def random_position(self, only_if_empty=True):
+    def random_position(self):
         pos = (
             random.randint(0, self.field.width-1),
             random.randint(0, self.field.height-1),
         )
-        
-        while only_if_empty and not self.field.space.is_cell_empty(pos):
-            pos = (
-                random.randint(0, self.field.width-1),
-                random.randint(0, self.field.height-1),
-            )
 
         return pos
     

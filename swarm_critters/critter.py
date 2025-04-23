@@ -25,14 +25,6 @@ class Critter(FieldAgent):
         
         # start calculating our current velocity
         self.velocity = random_velocity()
-        self.boid_behaviour()
-        
-    def boid_behaviour(self):
-        for n in self.get_neighbors(self.boid_radius):
-            if not isinstance(n, Critter): 
-                continue
-            
-            # TODO I hate evrything and I'm a really bad programmer :(
 
     def move_by_velocity(self):
         normalized_v = [0, 0]
