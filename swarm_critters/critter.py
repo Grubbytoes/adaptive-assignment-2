@@ -1,60 +1,38 @@
 import numpy as np
 
+from mymathstuff import vector2
 from .field_agent import FieldAgent
 
 class Critter(FieldAgent):
     colour = "gold"
+    type = "critter"
 
     def __init__(self, model, nest, sight_range=10):
         super().__init__(model)
         
         self.sight_range = max(sight_range, 1)
-        self.velocity = random_velocity()
+        self.move_dir = vector2.rand()
         self.nest = nest
-        self.pos_from_nest = [0, 0]
-        self.boid_radius = 5
-        
-        #! probably better to do this in something more memory efficient than a string
-        self.state = "explore"
         
     def step(self):
         super().step()
         
-        # move by our current velocity
-        self.move_by_velocity()
+        # looking for flowers
+        for n in self.get_field_neighbors(8):
+            if n.type == "flower":
+                #! PURELY FOR DEMONSTRATION
+                n.kill()
         
-        # start calculating our current velocity
-        self.velocity = random_velocity()
-        self.boid_behaviour()
+        self.wander()
         
-    def boid_behaviour(self):
-        for n in self.get_neighbors(self.boid_radius):
-            if not isinstance(n, Critter): 
-                continue
-            
-            # TODO I hate evrything and I'm a really bad programmer :(
+        # normalize, and turning noise, and move
+        self.move_dir = turning_noise(vector2.normalized(self.move_dir))
+        self.move(*self.move_dir)
 
-    def move_by_velocity(self):
-        normalized_v = [0, 0]
-        
-        for i in range(2):
-            normalized_v[i] = max(-1, min(self.velocity[i], 1))
-        
-        self.move(*normalized_v)
-    
-    def move(self, x, y):
-        super().move(x, y)
-        self.pos_from_nest[0] += x
-        self.pos_from_nest[1] += y
-    
-    def place(self, space, x=0, y=0):
-        super().place(space, x, y)
-        self.pos_from_nest = [
-            self.nest.pos[0] + x,
-            self.nest.pos[1] + y
-        ]
+    def wander(self):
+        # TODO improve this
+        pass
 
-def random_velocity():
-    coords = [0, 0]
-    coords[np.random.randint(0, 2)] = np.random.choice((-1, 1))
-    return np.array(coords)
+
+def turning_noise(v):
+    return vector2.rotated(v, np.random.randint(-2, 3))
