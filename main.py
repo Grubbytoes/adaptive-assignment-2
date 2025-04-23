@@ -17,7 +17,7 @@ def main():
     environment_manager = EnvironmentManager(_field)
     
     environment_manager.initialize(24)
-    environment_manager.field.run_for(100, draw_field) # oh my god this is evil
+    environment_manager.field.run_for(250, draw_field) # oh my god this is evil
 
 
 def draw_field(field: Field, delay=40):  

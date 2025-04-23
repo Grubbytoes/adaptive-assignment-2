@@ -1,4 +1,5 @@
 import numpy as np
+import mymathstuff
 
 from .field_agent import FieldAgent
 
@@ -14,30 +15,17 @@ class Critter(FieldAgent):
         self.pos_from_nest = [0, 0]
         self.boid_radius = 5
         
-        #! probably better to do this in something more memory efficient than a string
-        self.state = "explore"
-        
     def step(self):
         super().step()
         
         # move by our current velocity
-        self.move_by_velocity()
-        
-        # start calculating our current velocity
-        self.velocity = random_velocity()
+        self.velocity = self.move_by_velocity()
 
     def move_by_velocity(self):
-        normalized_v = [0, 0]
-        
-        for i in range(2):
-            normalized_v[i] = max(-1, min(self.velocity[i], 1))
-        
-        self.move(*normalized_v)
-    
-    def move(self, x, y):
-        super().move(x, y)
-        self.pos_from_nest[0] += x
-        self.pos_from_nest[1] += y
+        # moves by, and returns, velocity normalized
+        v_normalized = mymathstuff.vec2_normalized(self.velocity)
+        self.move(*v_normalized)
+        return v_normalized
     
     def place(self, space, x=0, y=0):
         super().place(space, x, y)
@@ -47,6 +35,6 @@ class Critter(FieldAgent):
         ]
 
 def random_velocity():
-    coords = [0, 0]
-    coords[np.random.randint(0, 2)] = np.random.choice((-1, 1))
+    coords = [0, 100]
+    coords = mymathstuff.vec2_rotated(coords, np.random.randint(0, 360))
     return np.array(coords)
