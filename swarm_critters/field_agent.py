@@ -2,6 +2,7 @@ import mesa
 
 class FieldAgent(mesa.Agent):
     colour = "darkslategray"
+    type = "base"
     
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, *args, **kwargs)
@@ -26,11 +27,15 @@ class FieldAgent(mesa.Agent):
         return (x_relative, y_relative)
     
     # CONTINUOUS
-    def get_neighbors(self, r):
+    def get_field_neighbors(self, r):
         if not self.is_placed():
             return
         
-        neighbors = self._space.get_neighbors(self.pos, r, False) 
+        neighbors = [
+            n 
+            for n in self._space.get_neighbors(self.pos, r, False)
+            if isinstance(n, FieldAgent)
+        ]
         return neighbors
     
     # DISCREET
@@ -56,3 +61,7 @@ class FieldAgent(mesa.Agent):
         
         self._space = space
         self._space.place_agent(self, (x, y))
+    
+    def kill(self):
+        self.model.deregister_agent(self)
+        self._space.remove_agent(self)

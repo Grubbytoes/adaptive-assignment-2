@@ -1,40 +1,40 @@
 import numpy as np
-import mymathstuff
 
+from mymathstuff import vector2
 from .field_agent import FieldAgent
 
 class Critter(FieldAgent):
     colour = "gold"
+    type = "critter"
 
     def __init__(self, model, nest, sight_range=10):
         super().__init__(model)
         
         self.sight_range = max(sight_range, 1)
-        self.velocity = random_velocity()
+        self.move_dir = random_velocity()
         self.nest = nest
-        self.pos_from_nest = [0, 0]
-        self.boid_radius = 5
         
     def step(self):
         super().step()
         
-        # move by our current velocity
-        self.velocity = self.move_by_velocity()
+        # looking for flowers
+        for n in self.get_field_neighbors(8):
+            if n.type == "flower":
+                print("I FOUND A FLOWER!")
+                #! PURELY FOR DEMONSTRATION
+                n.kill()
+        
+        self.wander()
+        
+        # normalize and move
+        self.move_dir = vector2.normalized(self.move_dir)
+        self.move(*self.move_dir)
 
-    def move_by_velocity(self):
-        # moves by, and returns, velocity normalized
-        v_normalized = mymathstuff.vec2_normalized(self.velocity)
-        self.move(*v_normalized)
-        return v_normalized
-    
-    def place(self, space, x=0, y=0):
-        super().place(space, x, y)
-        self.pos_from_nest = [
-            self.nest.pos[0] + x,
-            self.nest.pos[1] + y
-        ]
+    def wander(self):
+        # TODO improve this
+        pass
 
 def random_velocity():
-    coords = [0, 100]
-    coords = mymathstuff.vec2_rotated(coords, np.random.randint(0, 360))
+    coords = [0, 1]
+    coords = vector2.rotated(coords, np.random.randint(0, 360))
     return np.array(coords)

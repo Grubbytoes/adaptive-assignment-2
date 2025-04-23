@@ -1,1 +1,1 @@
-from .vector2 import vec2_rotated, vec2_normalized, vec2_magnitude
+from . import vector2
