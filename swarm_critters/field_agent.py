@@ -1,6 +1,8 @@
 import mesa
 
 class FieldAgent(mesa.Agent):
+    colour = "darkslategray"
+    
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, *args, **kwargs)
         
@@ -10,12 +12,27 @@ class FieldAgent(mesa.Agent):
     
     def step(self):
         self.step_count += 1
+    
         
     def relative_position_of(self, other: mesa.Agent):
         x_relative = int(other.pos[0] - self.pos[0])
         y_relative = int(other.pos[1] - self.pos[1])
         
         return (x_relative, y_relative)
+    
+    def get_neighbors(self):
+        if not self.is_placed():
+            return
+        
+        vision = []
+        field_of_vision = self.space.get_neighbors(self.pos, True, radius=self.sight_range)
+        
+        for other in field_of_vision:
+            other_position = self.relative_position_of(other)
+            # distance = abs(other_position[0]) + abs(other_position[1])
+            vision.append(other_position)
+        
+        return vision
     
     def is_placed(self):
         return self._space != None
