@@ -6,7 +6,7 @@ class Field(mesa.Model):
     def __init__(self, space_width, space_height, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        self.space = self.grid = mesa.space.SingleGrid(space_width, space_height, True)
+        self.space = self.grid = mesa.space.MultiGrid(space_width, space_height, True)
         self.width = space_width
         self.height = space_height
     
