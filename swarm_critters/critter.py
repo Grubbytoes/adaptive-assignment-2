@@ -1,4 +1,3 @@
-import mesa
 import numpy as np
 
 from .field_agent import FieldAgent

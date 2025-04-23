@@ -1,5 +1,6 @@
 import pygame
 
+from environment_manager import EnvironmentManager
 from swarm_critters import *
 
 FIELD_SIZE = 64
@@ -12,20 +13,11 @@ screen = pygame.display.set_mode((FIELD_SIZE * SCALE, FIELD_SIZE * SCALE))
 ###
 
 def main():
-    field = Field(FIELD_SIZE, FIELD_SIZE)
+    _field = Field(FIELD_SIZE, FIELD_SIZE)
+    environment_manager = EnvironmentManager(_field)
     
-    # make nest
-    nest = Nest(field)
-    field.place_agent(nest, 16, 14)
-    
-    # make critters 
-    for i in range(5):
-        new_critter = Critter(field, nest)
-        field.place_agent(new_critter, 10 + i*2, 16)
-    
-    for i in range(100):    
-        field.run_for(1)
-        draw_field(field)
+    environment_manager.initialize()
+    environment_manager.field.run_for(100, draw_field) # oh my god this is evil
 
 
 def draw_field(field: Field, delay=40):  
