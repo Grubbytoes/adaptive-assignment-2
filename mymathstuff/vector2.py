@@ -18,3 +18,8 @@ def magnitude(v: np.ndarray):
 
 def normalized(v: np.ndarray):
     return np.divide(v, magnitude(v))
+
+def rand(magnitude=1):
+    coords = [0, 1]
+    coords = rotated(coords, np.random.randint(0, 360))
+    return np.array(coords)
