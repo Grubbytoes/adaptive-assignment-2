@@ -27,6 +27,9 @@ class FieldAgent(mesa.Agent):
     
     def relative_position(self, pos):
         return self._space.get_heading(self.pos, pos)
+    
+    def distance(self, pos):
+        return self._space.get_distance(self.pos, pos)
             
     def get_field_neighbors(self, r):
         if not self.is_placed():
@@ -49,8 +52,7 @@ class FieldAgent(mesa.Agent):
         if other is None:
             return 0 < len(self.get_field_neighbors(1))
     
-        other_pos = self.relative_position_of(other)
-        return 1 > vector2.magnitude(other_pos)
+        return 1 > self._space.get_distance(self.pos, other.pos)
     
     def place(self, space, x=0, y=0):
         if self.is_placed():

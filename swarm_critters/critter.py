@@ -30,11 +30,11 @@ class Critter(FieldAgent):
         
         if self.state == Critter.WANDER:
             self.wander()
-        if self.state == Critter.COLLECTING:
+        elif self.state == Critter.COLLECTING:
             self.collecting(self.confirmed_flower)
-        if self.state == Critter.HOMING:
+        elif self.state == Critter.HOMING:
             self.homing()
-        if self.state == Critter.SEEKING:
+        elif self.state == Critter.SEEKING:
             self.seeking()
                 
         # normalize, and turning noise, and move
@@ -65,14 +65,24 @@ class Critter(FieldAgent):
             self.state = Critter.HOMING
             return
         
-        self.move_towards(flower)
+        self.move_towards(flower.pos)
     
     # The critter is moving towards a flower that it thinks exists in space
     # it will enter the collecting state one it reaches it, or if it encounters another flower
     # along the way
     # it will enter the wandering state if it arrives at the position and there is no flower
     def seeking(self):
-        raise NotImplementedError("seeking behaviour not implemented")
+        self.move_towards(self.possible_flower.pos)
+        
+        # look for flowers
+        neighbors = self.get_field_neighbors(self.sight_range)
+        self.look_for_flowers(neighbors)
+        
+        # give up if we've reached that position without finding anything
+        distance = self.distance(self.possible_flower.pos)
+        if self.sight_range/2 > distance:
+            self.possible_flower = None
+            self.state = Critter.WANDER
 
     # Critter will move towards the nest, and deposit nectar
     # then will pick a random direction and enter the wandering state
@@ -83,7 +93,7 @@ class Critter(FieldAgent):
             self.move_dir = vector2.rand()
             return
         
-        self.move_towards(self.nest)
+        self.move_towards(self.nest.pos)
     
     # Take a set/list of flowers (ie one that has been gathered from the neighborhood) and look for flowers
     # if one is found, move to collect nectar
@@ -103,11 +113,11 @@ class Critter(FieldAgent):
             self.possible_flower = None
     
     # Set the critters move_dir towards a position in space (normalizes by default)
-    def move_towards(self, other: FieldAgent, normalize=True):
+    def move_towards(self, point, normalize=True):
         if normalize:
-            self.move_dir = vector2.normalized(self.relative_position_of(other))
+            self.move_dir = vector2.normalized(self.relative_position(point))
         else:
-            self.move_dir = self.relative_position_of(other)
+            self.move_dir = self.relative_position(point)
     
     # Log a position in space where we believe/remember a flower to be, along with how much nectar it's meant to have
     def log_flower(self, p, n):
