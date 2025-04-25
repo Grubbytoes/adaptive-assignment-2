@@ -35,8 +35,8 @@ class Critter(FieldAgent):
         self.move_dir = turning_noise(vector2.normalized(self.move_dir))
         self.move(*self.move_dir)
 
+    # critter wanders along a straight line, searching for flowers
     def wander(self):
-        # search for flowers
         neighbors = self.get_field_neighbors(self.sight_range)
         
         for n in neighbors:
@@ -46,9 +46,18 @@ class Critter(FieldAgent):
             self.state = self.ATTRACTED
                 
 
+    # Used when a critter is attracted to that flower. Will take pollen and begin homing once flower has been reached
+    # until then will move towards flower
     def attracted(self, flower: Flower):
-        # Used when a critter is attracted to that flower. Will take pollen and begin homing once flower has been reached
-        # until then will move towards flower
+        #! not what we want
+        # while this will appear to have the desired effect on a high level, we actually want to store the flower
+        # in memory just as a point in space rather than a pointer to a specific flower
+        # the critter should have *literally no way of knowing* whether or not that flower still exists
+        # how much pollen it has etc. until it reaches it
+        if flower.pos is None:
+            self.state = self.WANDER
+            return
+        
         if self.is_touching(flower):
             flower.take_pollen()
             self.state = self.HOMING
@@ -57,9 +66,9 @@ class Critter(FieldAgent):
         self.move_towards(flower)
         
 
+    # Critter will move towards the nest, and deposit pollen
+    # then will pick a random direction and enter the wandering state
     def homing(self):
-        # Critter will move towards the nest, and deposit pollen
-        # then will pick a random direction and enter the wandering state
         if self.is_touching(self.nest):
             self.nest.deposit_pollen()
             self.state = self.WANDER

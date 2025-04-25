@@ -58,7 +58,7 @@ class FieldAgent(mesa.Agent):
     
     def is_touching(self, other=None):
         # If an other is provided, returns true of the relative position p of that other has a magnitude less than 1
-        # if no otehr is provided, returns true if any other agents exist on the felid with in a 1 unit radius
+        # if no other is provided, returns true if any other agents exist on the felid with in a 1 unit radius
         if other is None:
             return 0 < len(self.get_field_neighbors(1))
     

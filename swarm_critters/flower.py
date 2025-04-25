@@ -9,6 +9,9 @@ class Flower(FieldAgent):
         
         self.pollen = 5
     
+    # has pollen taken by a critter
     def take_pollen(self):
-        # has pollen taken by a critter
-        pass
+        self.pollen -= 1
+        if 0 >= self.pollen:
+            self.kill()
+        
