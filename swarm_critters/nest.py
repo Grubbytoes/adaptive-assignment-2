@@ -7,4 +7,8 @@ class Nest(FieldAgent):
     type = "nest"
     
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs), 
+        super().__init__(*args, **kwargs)
+    
+    def deposit_pollen(self):
+        # Takes pollen deposited by a critter
+        pass

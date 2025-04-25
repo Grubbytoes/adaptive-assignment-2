@@ -8,3 +8,7 @@ class Flower(FieldAgent):
         super().__init__(model, *args, **kwargs)
         
         self.pollen = 5
+    
+    def take_pollen(self):
+        # has pollen taken by a critter
+        pass

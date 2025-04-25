@@ -1,5 +1,7 @@
 import mesa
 
+from mymathstuff import vector2
+
 class FieldAgent(mesa.Agent):
     colour = "darkslategray"
     type = "base"
@@ -53,6 +55,15 @@ class FieldAgent(mesa.Agent):
     
     def is_placed(self):
         return self._space != None
+    
+    def is_touching(self, other=None):
+        # If an other is provided, returns true of the relative position p of that other has a magnitude less than 1
+        # if no otehr is provided, returns true if any other agents exist on the felid with in a 1 unit radius
+        if other is None:
+            return 0 < len(self.get_field_neighbors(1))
+    
+        other_pos = self.relative_position_of(other)
+        return 1 > vector2.magnitude(other_pos)
     
     def place(self, space, x=0, y=0):
         if self.is_placed():

@@ -11,7 +11,7 @@ class EnvironmentManager:
         self.field: Field = field
         self.is_initialized = False
     
-    def initialize(self, critter_count=8, flower_count=24, minimum_flower_distance=10):
+    def initialize(self, critter_count=8, flower_frequency=0.05, minimum_flower_distance=10):
         if self.is_initialized:
             print(f"WARNING: {self} is already initialized")
             return
@@ -35,7 +35,8 @@ class EnvironmentManager:
             self.field.place_agent(new_critter, *pos)
         
         # 3. generate flowers
-        for i in range(flower_count):
+        total_field_area = self.field.width * self.field.height
+        for i in range(int(total_field_area * flower_frequency / 16)):
             new_flower = Flower(self.field)
             flower_position = self.random_position()
             self.field.place_agent(new_flower, *flower_position)
