@@ -22,13 +22,12 @@ class FieldAgent(mesa.Agent):
     def step(self):
         self.step_count += 1
     
-    def relative_position_of(self, other: mesa.Agent):
-        x_relative = int(other.pos[0] - self.pos[0])
-        y_relative = int(other.pos[1] - self.pos[1])
-        
-        return (x_relative, y_relative)
+    def relative_position_of(self, other: mesa.Agent):        
+        return self._space.get_heading(self.pos, other.pos)
     
-    # CONTINUOUS
+    def relative_position(self, pos):
+        return self._space.get_heading(self.pos, pos)
+            
     def get_field_neighbors(self, r):
         if not self.is_placed():
             return
@@ -39,26 +38,14 @@ class FieldAgent(mesa.Agent):
             if isinstance(n, FieldAgent)
         ]
         return neighbors
-    
-    # DISCREET
-    # def get_neighbors(self, r):
-    #     if not self.is_placed():
-    #         return
-        
-    #     vision = []
-    #     field_of_vision = self._space.get_neighbors(self.pos, True, radius=r)
-        
-    #     for other in field_of_vision:
-    #         vision.append(other)
-        
-    #     return vision
+
     
     def is_placed(self):
         return self._space != None
     
+    # If an other is provided, returns true of the relative position p of that other has a magnitude less than 1
+    # if no other is provided, returns true if any other agents exist on the felid with in a 1 unit radius
     def is_touching(self, other=None):
-        # If an other is provided, returns true of the relative position p of that other has a magnitude less than 1
-        # if no other is provided, returns true if any other agents exist on the felid with in a 1 unit radius
         if other is None:
             return 0 < len(self.get_field_neighbors(1))
     

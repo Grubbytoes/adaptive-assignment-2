@@ -7,11 +7,11 @@ class Flower(FieldAgent):
     def __init__(self, model, *args, **kwargs):
         super().__init__(model, *args, **kwargs)
         
-        self.pollen = 5
+        self.nectar = 5
     
     # has pollen taken by a critter
-    def take_pollen(self):
-        self.pollen -= 1
-        if 0 >= self.pollen:
+    def take_nectar(self):
+        self.nectar -= 1
+        if 0 >= self.nectar:
             self.kill()
         
