@@ -24,17 +24,20 @@ class Critter(FieldAgent):
         
         # flower seeking logic
         self.possible_flower: FlowerData = None
-        self.confirmed_flower = None
-        
-        # private/hidden members
-        self._neighboring_critters = (-1, [])
+        self.confirmed_flower = None  
+        self.last_flower_found_at = 0   
+
     def step(self):
         super().step()
         
-        
         # fill vision
         self.vision.clear()
-        self.vision.extend(self.get_field_neighbors(self.sight_range))
+        self.vision.extend(self.field_neighbors(self.sight_range))
+        
+        # set boid weightings
+        alignment_weight = 1
+        separation_weight = 1
+        cohesion_weight = 1
     
         # state behaviour
         if self.state == Critter.WANDER:
@@ -45,6 +48,11 @@ class Critter(FieldAgent):
             self.homing()
         elif self.state == Critter.SEEKING:
             self.seeking()
+        
+        # boid behaviour
+        self.alignment(alignment_weight)
+        self.separation(separation_weight)
+        self.cohesion(cohesion_weight)
                 
         # normalize, and turning noise, and move
         self.move_dir = turning_noise(vector2.normalized(self.move_dir))
@@ -94,7 +102,7 @@ class Critter(FieldAgent):
         
         # give up if we've reached that position without finding anything
         distance = self.distance(self.possible_flower.pos)
-        if self.sight_range/2 > distance:
+        if self.sight_range / 2 > distance:
             self.possible_flower = None
             self.state = Critter.WANDER
 
@@ -111,10 +119,10 @@ class Critter(FieldAgent):
     
     # Incorporates separation steer of boid like behaviour into move_dir 
     # defined as the sum of the negative relative distances to all nearby critters
-    def separation(self, weight):
+    def separation(self, weight=1):
         steer = np.zeros(2)
-        for other in self.get_neighboring_critters():
-            steer = np.add(steer, np.negative(self.relative_position_of(other)))
+        for other in self.like_neighbors():
+            steer = np.add(steer, np.negative(self.relative_position(other.pos)))
         
         if weight != 1:
             steer = np.multiply(steer, weight)
@@ -123,8 +131,8 @@ class Critter(FieldAgent):
     
     # Incorporates alignment
     # defined as the mean of the movement directions of all nearby critters
-    def alignment(self, weight):
-        _test = self.get_neighboring_critters()
+    def alignment(self, weight=1):
+        _test = self.like_neighbors()
         directions = np.array([
             other.move_dir
             for other
@@ -143,11 +151,11 @@ class Critter(FieldAgent):
     
     # Incorporates cohesion
     # defined as the mean position of all nearby critters
-    def cohesion(self, weight):
+    def cohesion(self, weight=1):
         positions = np.array([
-            self.relative_position_of(other)
+            self.relative_position(other.pos)
             for other
-            in self.get_neighboring_critters()
+            in self.like_neighbors()
         ])
         
         if 0 >= len(positions):
@@ -169,20 +177,15 @@ class Critter(FieldAgent):
             
         return None
     
-    # take nectar from a flower, and log its position if there is still any menkar remaining
+    # take nectar from a flower, and log its position if there is still any nectar remaining
     def take_and_log_nectar(self, flower):
+        self.last_flower_found_at = self.step_count
+        
         flower.take_nectar()
         if 0 < flower.nectar:
             self.log_flower(flower.pos, flower.nectar)
         else:
             self.possible_flower = None
-    
-    # Set the critters move_dir towards a position in space (normalizes by default)
-    def move_towards(self, point, normalize=True):
-        if normalize:
-            self.move_dir = vector2.normalized(self.relative_position(point))
-        else:
-            self.move_dir = self.relative_position(point)
     
     # Log a position in space where we believe/remember a flower to be, along with how much nectar it's meant to have
     def log_flower(self, p, n):
@@ -191,16 +194,11 @@ class Critter(FieldAgent):
             nectar=n
         )
     
-    def get_neighboring_critters(self):
-        if self._neighboring_critters[0] == self.step_count:
-            return self._neighboring_critters[1]
-        else:
-            self._neighboring_critters = (
-                self.step_count,
-                [n for n in self.vision if n.type == "critter"]
-            )
-            return self._neighboring_critters[1]
-
+    # Returns how recently the other has visited a flower, compared to the self
+    # Will be positive if the other has visited a flower MORE recently, otherwise negative
+    def compare(self, other):
+        return other.last_flower_found_at - self.last_flower_found_at
+        
 
 @dataclass
 class FlowerData:

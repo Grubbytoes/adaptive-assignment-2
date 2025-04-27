@@ -12,18 +12,23 @@ class FieldAgent(mesa.Agent):
         self.step_count = 0
         
         self._space = None
+        self._like_neighbors = (-1, [])
     
     def move(self, x, y):
         new_x = self.pos[0] + x
         new_y = self.pos[1] + y
         
         self._space.move_agent(self, (new_x, new_y))
-    
+        
+    # Set the critters move_dir towards a position in space (normalizes by default)
+    def move_towards(self, point, normalize=True):
+        if normalize:
+            self.move_dir = vector2.normalized(self.relative_position(point))
+        else:
+            self.move_dir = self.relative_position(point)
+            
     def step(self):
         self.step_count += 1
-    
-    def relative_position_of(self, other: mesa.Agent):        
-        return self._space.get_heading(self.pos, other.pos)
     
     def relative_position(self, pos):
         return self._space.get_heading(self.pos, pos)
@@ -31,7 +36,7 @@ class FieldAgent(mesa.Agent):
     def distance(self, pos):
         return self._space.get_distance(self.pos, pos)
             
-    def get_field_neighbors(self, r):
+    def field_neighbors(self, r):
         if not self.is_placed():
             return
         
@@ -41,7 +46,16 @@ class FieldAgent(mesa.Agent):
             if isinstance(n, FieldAgent)
         ]
         return neighbors
-
+    
+    def like_neighbors(self):
+        if self._like_neighbors[0] == self.step_count:
+            return self._like_neighbors[1]
+        else:
+            self._like_neighbors = (
+                self.step_count,
+                [n for n in self.vision if n.type == "critter"]
+            )
+            return self._like_neighbors[1]
     
     def is_placed(self):
         return self._space != None
@@ -50,7 +64,7 @@ class FieldAgent(mesa.Agent):
     # if no other is provided, returns true if any other agents exist on the felid with in a 1 unit radius
     def is_touching(self, other=None):
         if other is None:
-            return 0 < len(self.get_field_neighbors(1))
+            return 0 < len(self.field_neighbors(1))
     
         return 1 > self._space.get_distance(self.pos, other.pos)
     

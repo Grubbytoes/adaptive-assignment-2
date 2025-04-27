@@ -8,7 +8,9 @@ class Nest(FieldAgent):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.nectar = 0
     
     def deposit_nectar(self):
         # Takes nectar deposited by a critter
-        pass
+        self.nectar += 1
+        print(self.nectar)
