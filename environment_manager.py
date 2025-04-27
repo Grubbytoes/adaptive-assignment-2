@@ -4,6 +4,8 @@ import json
 from swarm_critters import *
 from math import pow, sqrt
 
+RESULTS_FOLDER = "results"
+
 # The job of this script is to take a newly instanced field and fill it with agents (nest, flowers, critters) in such a way
 # that is conducive to the rest of our experiment
 
@@ -74,11 +76,13 @@ class EnvironmentManager:
     def get_nest(self) -> Nest:
         return self.field.agents_by_type[Nest][0]
     
-    def dump(self):
-        return json.dumps(
+    def save_dump(self, file_name):
+        file = open(f"{RESULTS_FOLDER}/{file_name}", 'w')
+        return json.dump(
             {
                 "flower frequency": self.flower_frequency,
                 "flower richness": self.flower_richness,
                 "nectar per cycle": self.get_nest().nectar_per_cycle
-            }
+            },
+            file
         )

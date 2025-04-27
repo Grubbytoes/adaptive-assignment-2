@@ -49,12 +49,7 @@ class Critter(FieldAgent):
         self.move(*self.move_dir)
 
     # critter wanders along a straight line, searching for flowers
-    def wander(self):
-        # boid behaviour
-        self.alignment()
-        self.separation(4)
-        self.cohesion()
-        
+    def wander(self):        
         # do we know where any flowers are?
         if self.possible_flower != None:
             self.state = Critter.SEEKING

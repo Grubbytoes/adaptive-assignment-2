@@ -3,7 +3,7 @@ import pygame
 from environment_manager import EnvironmentManager
 from swarm_critters import *
 
-FIELD_SIZE = 320
+FIELD_SIZE = 160
 SCALE = 4
 
 # Pygame
@@ -16,9 +16,9 @@ def main():
     _field = Field(FIELD_SIZE, FIELD_SIZE)
     environment_manager = EnvironmentManager(_field)
     
-    environment_manager.initialize(40, .02)
-    environment_manager.run(100, 30)
-    print(environment_manager.dump())
+    environment_manager.initialize(20)
+    environment_manager.run(100, 10, draw_field)
+    print(environment_manager.save_dump("test"))
 
 
 def draw_field(field: Field, delay=40):  
