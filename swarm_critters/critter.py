@@ -17,6 +17,7 @@ class Critter(FieldAgent):
         super().__init__(model)
         
         self.sight_range = max(sight_range, 1)
+        self.vision = []
         self.move_dir = vector2.rand()
         self.nest = nest
         self.state = Critter.WANDER
@@ -25,13 +26,21 @@ class Critter(FieldAgent):
         self.possible_flower: FlowerData = None
         self.confirmed_flower = None
         
+        # private/hidden members
+        self._neighboring_critters = (-1, [])
     def step(self):
         super().step()
         
+        
+        # fill vision
+        self.vision.clear()
+        self.vision.extend(self.get_field_neighbors(self.sight_range))
+    
+        # state behaviour
         if self.state == Critter.WANDER:
             self.wander()
         elif self.state == Critter.COLLECTING:
-            self.collecting(self.confirmed_flower)
+            self.collecting()
         elif self.state == Critter.HOMING:
             self.homing()
         elif self.state == Critter.SEEKING:
@@ -47,25 +56,28 @@ class Critter(FieldAgent):
         if self.possible_flower != None:
             self.state = Critter.SEEKING
             return
-        
-        neighbors = self.get_field_neighbors(self.sight_range)
-        self.look_for_flowers(neighbors)
+           
+        # Are there any flowers in our field of vision?
+        f = self.check_for_flowers()
+        if f != None:
+            self.confirmed_flower = f
+            self.state = Critter.COLLECTING
                 
     # Used when a critter is attracted to that flower. Will take nectar and begin homing once flower has been reached
     # until then will move towards flower
-    def collecting(self, flower):
+    def collecting(self):
         # check that the flower still exists in space - ie has not been exhausted
-        if 1 > flower.nectar or flower.pos is None:
+        if 1 > self.confirmed_flower.nectar or self.confirmed_flower.pos is None:
             self.state = Critter.WANDER
             self.confirmed_flower = None
             return
         
-        if self.is_touching(flower):
-            self.take_and_log_nectar(flower)
+        if self.is_touching(self.confirmed_flower):
+            self.take_and_log_nectar(self.confirmed_flower)
             self.state = Critter.HOMING
             return
         
-        self.move_towards(flower.pos)
+        self.move_towards(self.confirmed_flower.pos)
     
     # The critter is moving towards a flower that it thinks exists in space
     # it will enter the collecting state one it reaches it, or if it encounters another flower
@@ -75,8 +87,10 @@ class Critter(FieldAgent):
         self.move_towards(self.possible_flower.pos)
         
         # look for flowers
-        neighbors = self.get_field_neighbors(self.sight_range)
-        self.look_for_flowers(neighbors)
+        f = self.check_for_flowers()
+        if f != None:
+            self.confirmed_flower = f
+            self.state = Critter.COLLECTING
         
         # give up if we've reached that position without finding anything
         distance = self.distance(self.possible_flower.pos)
@@ -95,14 +109,65 @@ class Critter(FieldAgent):
         
         self.move_towards(self.nest.pos)
     
-    # Take a set/list of flowers (ie one that has been gathered from the neighborhood) and look for flowers
-    # if one is found, move to collect nectar
-    def look_for_flowers(self, neighbors):
-        for n in neighbors:
-            if n.type != "flower":
-                continue
-            self.confirmed_flower = n
-            self.state = Critter.COLLECTING
+    # Incorporates separation steer of boid like behaviour into move_dir 
+    # defined as the sum of the negative relative distances to all nearby critters
+    def separation(self, weight):
+        steer = np.zeros(2)
+        for other in self.get_neighboring_critters():
+            steer = np.add(steer, np.negative(self.relative_position_of(other)))
+        
+        if weight != 1:
+            steer = np.multiply(steer, weight)
+        
+        self.move_dir = np.add(steer, self.move_dir)
+    
+    # Incorporates alignment
+    # defined as the mean of the movement directions of all nearby critters
+    def alignment(self, weight):
+        _test = self.get_neighboring_critters()
+        directions = np.array([
+            other.move_dir
+            for other
+            in _test
+        ])
+        
+        if 0 >= len(directions):
+            return
+        
+        steer = np.mean(directions, 0)
+
+        if weight != 1:
+            steer = np.multiply(steer, weight)
+
+        self.move_dir = np.add(steer, self.move_dir)
+    
+    # Incorporates cohesion
+    # defined as the mean position of all nearby critters
+    def cohesion(self, weight):
+        positions = np.array([
+            self.relative_position_of(other)
+            for other
+            in self.get_neighboring_critters()
+        ])
+        
+        if 0 >= len(positions):
+            return
+        
+        steer = np.mean(positions, 0)
+
+        if weight != 1:
+            steer = np.multiply(steer, weight)
+        
+        self.move_dir = np.add(steer, self.move_dir)
+    
+    # look for flowers in the Critters vision
+    # if one is found, return it
+    def check_for_flowers(self):
+        for n in self.vision:
+            if n.type == "flower":
+                return n
+            
+        return None
     
     # take nectar from a flower, and log its position if there is still any menkar remaining
     def take_and_log_nectar(self, flower):
@@ -125,6 +190,17 @@ class Critter(FieldAgent):
             pos=p,
             nectar=n
         )
+    
+    def get_neighboring_critters(self):
+        if self._neighboring_critters[0] == self.step_count:
+            return self._neighboring_critters[1]
+        else:
+            self._neighboring_critters = (
+                self.step_count,
+                [n for n in self.vision if n.type == "critter"]
+            )
+            return self._neighboring_critters[1]
+
 
 @dataclass
 class FlowerData:
