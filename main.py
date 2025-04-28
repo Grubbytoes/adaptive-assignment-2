@@ -16,8 +16,9 @@ def main():
     _field = Field(FIELD_SIZE, FIELD_SIZE)
     environment_manager = EnvironmentManager(_field)
     
-    environment_manager.initialize(20, .02)
-    environment_manager.field.run_for(500, draw_field) # oh my god this is evil
+    environment_manager.initialize(20)
+    environment_manager.run(100, 10, draw_field)
+    print(environment_manager.save_dump("test"))
 
 
 def draw_field(field: Field, delay=40):  

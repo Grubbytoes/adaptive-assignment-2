@@ -33,11 +33,6 @@ class Critter(FieldAgent):
         # fill vision
         self.vision.clear()
         self.vision.extend(self.field_neighbors(self.sight_range))
-        
-        # set boid weightings
-        alignment_weight = 1
-        separation_weight = 1
-        cohesion_weight = 1
     
         # state behaviour
         if self.state == Critter.WANDER:
@@ -48,18 +43,13 @@ class Critter(FieldAgent):
             self.homing()
         elif self.state == Critter.SEEKING:
             self.seeking()
-        
-        # boid behaviour
-        self.alignment(alignment_weight)
-        self.separation(separation_weight)
-        self.cohesion(cohesion_weight)
                 
         # normalize, and turning noise, and move
         self.move_dir = turning_noise(vector2.normalized(self.move_dir))
         self.move(*self.move_dir)
 
     # critter wanders along a straight line, searching for flowers
-    def wander(self):
+    def wander(self):        
         # do we know where any flowers are?
         if self.possible_flower != None:
             self.state = Critter.SEEKING

@@ -4,10 +4,10 @@ class Flower(FieldAgent):
     colour = "darkorchid2"
     type = "flower"
     
-    def __init__(self, model, *args, **kwargs):
+    def __init__(self, model, nectar, *args, **kwargs):
         super().__init__(model, *args, **kwargs)
         
-        self.nectar = 5
+        self.nectar = nectar
     
     # has pollen taken by a critter
     def take_nectar(self):

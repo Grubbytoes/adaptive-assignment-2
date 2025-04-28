@@ -1,7 +1,10 @@
 import random
+import json
 
 from swarm_critters import *
 from math import pow, sqrt
+
+RESULTS_FOLDER = "results"
 
 # The job of this script is to take a newly instanced field and fill it with agents (nest, flowers, critters) in such a way
 # that is conducive to the rest of our experiment
@@ -10,8 +13,14 @@ class EnvironmentManager:
     def __init__(self, field):
         self.field: Field = field
         self.is_initialized = False
+        
+        self.flower_frequency = None
+        self.flower_richness = None
     
-    def initialize(self, critter_count=8, flower_frequency=0.05, minimum_flower_distance=10):
+    def initialize(self, critter_count=8, flower_frequency=0.2, flower_richness=5):
+        self.flower_frequency = flower_frequency
+        self.flower_richness = flower_richness
+        
         if self.is_initialized:
             print(f"WARNING: {self} is already initialized")
             return
@@ -36,11 +45,20 @@ class EnvironmentManager:
         
         # 3. generate flowers
         total_field_area = self.field.width * self.field.height
-        for i in range(int(total_field_area * flower_frequency / 16)):
-            new_flower = Flower(self.field)
+        for i in range(int(total_field_area * flower_frequency / 50)):
+            new_flower = Flower(self.field, flower_richness)
             flower_position = self.random_position()
             self.field.place_agent(new_flower, *flower_position)
+        
+        self.is_initialized = True
     
+    def run(self, cycle_length, cycles, field_callback = None):
+        if not self.is_initialized:
+            return
+        
+        self.get_nest().cycle_length = cycle_length
+        self.field.run_for(cycles * cycle_length, field_callback)
+        
     def random_position(self):
         pos = (
             random.randint(0, self.field.width-1),
@@ -55,5 +73,16 @@ class EnvironmentManager:
     def get_flowers(self):
         return self.field.agents_by_type(Flower)
     
-    def get_nest(self):
-        return self.field.agents_by_type(Nest)[0]
+    def get_nest(self) -> Nest:
+        return self.field.agents_by_type[Nest][0]
+    
+    def save_dump(self, file_name):
+        file = open(f"{RESULTS_FOLDER}/{file_name}", 'w')
+        return json.dump(
+            {
+                "flower frequency": self.flower_frequency,
+                "flower richness": self.flower_richness,
+                "nectar per cycle": self.get_nest().nectar_per_cycle
+            },
+            file
+        )
