@@ -46,11 +46,14 @@ class EnvironmentManager:
         # 3. generate flowers
         total_field_area = self.field.width * self.field.height
         for i in range(int(total_field_area * flower_frequency / 50)):
-            new_flower = Flower(self.field, flower_richness)
-            flower_position = self.random_position()
-            self.field.place_agent(new_flower, *flower_position)
+            self.plant_random_flower(flower_richness)
         
         self.is_initialized = True
+
+    def plant_random_flower(self, flower_richness):
+        new_flower = Flower(self.field, flower_richness)
+        flower_position = self.random_position()
+        self.field.place_agent(new_flower, *flower_position)
     
     def run(self, cycle_length, cycles, field_callback = None):
         if not self.is_initialized:

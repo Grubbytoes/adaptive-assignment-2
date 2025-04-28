@@ -16,8 +16,8 @@ def main():
     _field = Field(FIELD_SIZE, FIELD_SIZE)
     environment_manager = EnvironmentManager(_field)
     
-    environment_manager.initialize(20)
-    environment_manager.run(100, 10, draw_field)
+    environment_manager.initialize(20, 0.1)
+    environment_manager.run(100, 25, draw_field)
     print(environment_manager.save_dump("test"))
 
 

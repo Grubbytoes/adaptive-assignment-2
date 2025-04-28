@@ -20,6 +20,7 @@ class Nest(FieldAgent):
             print(self.nectar_per_cycle)
             
     
-    def deposit_nectar(self):
+    def deposit_nectar(self, critter, time=0):
         # Takes nectar deposited by a critter
+        # TODO pheromone queue
         self.nectar += 1
