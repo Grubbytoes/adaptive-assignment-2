@@ -160,8 +160,6 @@ class SocialCritter(Critter):
         if self.is_confident():
             return
 
-        to_retrace = []
-        to_follow = []
         to_avoid = []
 
         # Otherwise see what the others are doing
@@ -171,17 +169,18 @@ class SocialCritter(Critter):
 
             # if they're homing, go on the opposite direction to them
             if other.state == Critter.HOMING:
-                to_retrace.append(other)
+                self.confidence = other.clock
+                self.move_dir = np.multiply(other.move_dir, -1)
+                return
             # if they're confident, follow them
             elif other.is_confident():
-                to_follow.append(other)
+                self.move_towards(other.pos)
+                return
             # if they're searching avoid them
             else:
                 to_avoid.append(other)
 
         # pass it on to boid logic
-        self.alignment(to_retrace, -1)
-        self.cohesion(to_follow)
         self.separation(to_avoid)
     
     # Critter will move towards the nest, and deposit nectar
