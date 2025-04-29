@@ -37,7 +37,7 @@ class EnvironmentManager:
                 random.randint(nest.pos[0] - max_nest_distance, nest.pos[0] + max_nest_distance),
                 random.randint(nest.pos[1] - max_nest_distance, nest.pos[1] + max_nest_distance)
             )
-            new_critter = Critter(self.field, nest)
+            new_critter = LonelyCritter(self.field, nest)
             self.field.place_agent(new_critter, *pos)
         
         # 3. generate flowers
@@ -56,7 +56,7 @@ class EnvironmentManager:
         self.field.run_for(cycles * cycle_length, field_callback)
     
     def get_critters(self):
-        return self.field.agents_by_type(Critter)
+        return self.field.agents_by_type(LonelyCritter)
     
     def get_flowers(self):
         return self.field.agents_by_type(Flower)

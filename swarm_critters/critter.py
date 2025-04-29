@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from mymathstuff import vector2
 from .field_agent import FieldAgent
 
-class Critter(FieldAgent):
+class LonelyCritter(FieldAgent):
     colour = "gold"
     type = "critter"
-    base_confidence = 10
-    searching_turn_angle = 60
+    confidence_multiplier = 1.2
+    searching_turn_angle = 20
     
     SEARCHING = 's'
     HOMING = 'h'
@@ -20,7 +20,7 @@ class Critter(FieldAgent):
         self.vision = []
         self.move_dir = vector2.rand()
         self.nest = nest
-        self.state = Critter.SEARCHING
+        self.state = LonelyCritter.SEARCHING
         
         # Hugo's algorithm
         self.confidence = 0
@@ -34,13 +34,13 @@ class Critter(FieldAgent):
         self.vision.extend(self.field_neighbors(self.sight_range))
     
         # state behaviour
-        if self.state == Critter.HOMING:
+        if self.state == LonelyCritter.HOMING:
             self.homing()
-        elif self.state == Critter.SEARCHING:
+        elif self.state == LonelyCritter.SEARCHING:
             self.searching()
         else:
             # if we've somehow entered a bad state, return to the searching state
-            self.state = Critter.SEARCHING
+            self.state = LonelyCritter.SEARCHING
                 
         # normalize, and turning noise, and move
         self.move_dir = random_turn(vector2.normalized(self.move_dir))
@@ -52,45 +52,30 @@ class Critter(FieldAgent):
         other_critters = [] # all neighboring critters
         
         for other in self.vision:
-            if other.type == "flower":
-                # we only care if this is the only flower, or the closest one
-                if (
-                    other_flower != None and
-                    self.distance(other_flower.pos) < self.distance(other.pos)
-                ): continue
-                other_flower = other
-            elif other.type == "critter":
-                other_critters.append(other)
-        
-        # flower seeking logic
-        if other_flower != None and self.is_touching(other_flower):
-            self.state = Critter.HOMING
-            # TODO needs testing this is ROUGH CODE ONLY
-            self.clock = 0
-            self.state = Critter.HOMING
-            other_flower.take_nectar()            
-        elif other_flower != None:
-            self.confidence = 1
-            self.move_towards(other_flower.pos)
-        
-        # TODO critter communication
-        
+            if other.type != "flower":
+                continue
+            
+            if self.is_touching(other):
+                other.take_nectar()
+                self.clock = 0
+                self.state = LonelyCritter.HOMING
+            else:
+                self.move_towards(other.pos)
+
         # base
-        self.confidence = max(0, self.confidence - 1)
-        if self.confidence == 0:
-            self.confidence = Critter.base_confidence
-            self.move_dir = random_turn(self.move_dir, Critter.searching_turn_angle)           
-        
+        if self.confidence <= 0:
+            self.move_dir = random_turn(self.move_dir, LonelyCritter.searching_turn_angle)           
+        else:
+            self.confidence = max(0, self.confidence - 1)   
 
     # Critter will move towards the nest, and deposit nectar
     # then will pick a random direction and enter the wandering state
     def homing(self):
-        # TODO refine this is ROUGH CODE ONLY
         if self.is_touching(self.nest):
             self.nest.deposit_nectar(self, time=self.clock)            
-            self.state = Critter.SEARCHING
+            self.state = LonelyCritter.SEARCHING
             self.move_dir = np.multiply(self.move_dir, -1)
-            self.confidence = self.clock
+            self.confidence = int(self.clock * LonelyCritter.confidence_multiplier)
         else:
             self.move_towards(self.nest.pos)
             self.clock += 1
@@ -144,43 +129,6 @@ class Critter(FieldAgent):
             steer = np.multiply(steer, weight)
         
         self.move_dir = np.add(steer, self.move_dir)
-    
-    # look for flowers in the Critters vision
-    # if one is found, return it
-    def check_for_flowers(self):
-        for n in self.vision:
-            if n.type == "flower":
-                return n
-            
-        return None
-    
-    # take nectar from a flower, and log its position if there is still any nectar remaining
-    def take_and_log_nectar(self, flower):
-        self.last_flower_found_at = self.step_count
-        
-        flower.take_nectar()
-        if 0 < flower.nectar:
-            self.log_flower(flower.pos, flower.nectar)
-        else:
-            self.possible_flower = None
-    
-    # Log a position in space where we believe/remember a flower to be, along with how much nectar it's meant to have
-    def log_flower(self, p, n):
-        self.possible_flower = FlowerData(
-            pos=p,
-            nectar=n
-        )
-    
-    # Returns how recently the other has visited a flower, compared to the self
-    # Will be positive if the other has visited a flower MORE recently, otherwise negative
-    def compare(self, other):
-        return other.last_flower_found_at - self.last_flower_found_at
-        
-
-@dataclass
-class FlowerData:
-    pos: tuple
-    nectar: int    
 
 
 def random_turn(v, amount=1):
