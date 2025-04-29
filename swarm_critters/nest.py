@@ -12,15 +12,19 @@ class Nest(FieldAgent):
         super().__init__(*args, **kwargs)
         self.nectar = 0
         self.cycle_length = cycle_length
-        self.nectar_per_cycle = []
         self.pheromone_queue = deque()
         self.pheromone_queue_max_len = pheromone_queue_len
+        
+        # Performance monitoring
+        self.nectar_last_cycle = 0
+        self.nectar_over_time = []
+        self.nectar_per_cycle = []
     
     def step(self):
         super().step()
     
         if self.step_count % self.cycle_length == self.cycle_length-1:
-            self.nectar_per_cycle.append(self.nectar)            
+            self.log_cycle()           
     
     def deposit_nectar(self, time=0, direction=None):
         # Takes nectar deposited by a critter
@@ -37,4 +41,12 @@ class Nest(FieldAgent):
             return None # ie a signal to just go back in their direction
         else:
             return self.pheromone_queue.popleft()
+    
+    def log_cycle(self):
+        nectar_this_cycle = self.nectar - self.nectar_last_cycle
+        
+        self.nectar_over_time.append(self.nectar)
+        self.nectar_per_cycle.append(nectar_this_cycle)
+        
+        self.nectar_last_cycle = nectar_this_cycle
         
