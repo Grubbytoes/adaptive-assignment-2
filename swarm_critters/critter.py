@@ -7,194 +7,200 @@ from .field_agent import FieldAgent
 class Critter(FieldAgent):
     colour = "gold"
     type = "critter"
-    
-    WANDER = 0
-    COLLECTING = 1
-    HOMING = 2
-    SEEKING = 3
+    confidence_multiplier = 1.2
+    searching_turn_angle = 20
+
+    SEARCHING = 's'
+    HOMING = 'h'
 
     def __init__(self, model, nest, sight_range=5):
         super().__init__(model)
-        
+
         self.sight_range = max(sight_range, 1)
         self.vision = []
         self.move_dir = vector2.rand()
         self.nest = nest
-        self.state = Critter.WANDER
-        
-        # flower seeking logic
-        self.possible_flower: FlowerData = None
-        self.confirmed_flower = None  
-        self.last_flower_found_at = 0   
+        self.state = Critter.SEARCHING
+
+        # Hugo's algorithm
+        self.confidence = 0
+        self.clock = 0
 
     def step(self):
         super().step()
-        
+
         # fill vision
         self.vision.clear()
         self.vision.extend(self.field_neighbors(self.sight_range))
-    
+
         # state behaviour
-        if self.state == Critter.WANDER:
-            self.wander()
-        elif self.state == Critter.COLLECTING:
-            self.collecting()
-        elif self.state == Critter.HOMING:
+        if self.state == Critter.HOMING:
             self.homing()
-        elif self.state == Critter.SEEKING:
-            self.seeking()
-                
+        elif self.state == Critter.SEARCHING:
+            self.searching()
+        else:
+            # if we've somehow entered a bad state, return to the searching state
+            self.state = Critter.SEARCHING
+
         # normalize, and turning noise, and move
-        self.move_dir = turning_noise(vector2.normalized(self.move_dir))
+        self.move_dir = random_turn(vector2.normalized(self.move_dir))
         self.move(*self.move_dir)
 
     # critter wanders along a straight line, searching for flowers
-    def wander(self):        
-        # do we know where any flowers are?
-        if self.possible_flower != None:
-            self.state = Critter.SEEKING
-            return
-           
-        # Are there any flowers in our field of vision?
-        f = self.check_for_flowers()
-        if f != None:
-            self.confirmed_flower = f
-            self.state = Critter.COLLECTING
-                
-    # Used when a critter is attracted to that flower. Will take nectar and begin homing once flower has been reached
-    # until then will move towards flower
-    def collecting(self):
-        # check that the flower still exists in space - ie has not been exhausted
-        if 1 > self.confirmed_flower.nectar or self.confirmed_flower.pos is None:
-            self.state = Critter.WANDER
-            self.confirmed_flower = None
-            return
-        
-        if self.is_touching(self.confirmed_flower):
-            self.take_and_log_nectar(self.confirmed_flower)
-            self.state = Critter.HOMING
-            return
-        
-        self.move_towards(self.confirmed_flower.pos)
-    
-    # The critter is moving towards a flower that it thinks exists in space
-    # it will enter the collecting state one it reaches it, or if it encounters another flower
-    # along the way
-    # it will enter the wandering state if it arrives at the position and there is no flower
-    def seeking(self):
-        self.move_towards(self.possible_flower.pos)
-        
-        # look for flowers
-        f = self.check_for_flowers()
-        if f != None:
-            self.confirmed_flower = f
-            self.state = Critter.COLLECTING
-        
-        # give up if we've reached that position without finding anything
-        distance = self.distance(self.possible_flower.pos)
-        if self.sight_range / 2 > distance:
-            self.possible_flower = None
-            self.state = Critter.WANDER
+    def searching(self):
+        other_flower = None # the closest flower
+        other_critters = [] # all neighboring critters
+
+        for other in self.vision:
+            if other.type != "flower":
+                continue
+
+            if self.is_touching(other):
+                other.take_nectar()
+                self.clock = 0
+                self.state = Critter.HOMING
+                return
+            else:
+                self.move_towards(other.pos)
+
+        # base
+        if self.confidence <= 0:
+            self.move_dir = random_turn(self.move_dir, Critter.searching_turn_angle)
+        else:
+            self.confidence = max(0, self.confidence - 1)
 
     # Critter will move towards the nest, and deposit nectar
     # then will pick a random direction and enter the wandering state
     def homing(self):
-        if self.is_touching(self.nest):
-            self.nest.deposit_nectar()            
-            self.state = Critter.WANDER
-            self.move_dir = vector2.rand()
-            return
-        
-        self.move_towards(self.nest.pos)
-    
-    # Incorporates separation steer of boid like behaviour into move_dir 
+        if not self.is_touching(self.nest):
+            self.move_towards(self.nest.pos)
+            self.clock += 1
+        else:
+            self.state = Critter.SEARCHING
+            self.nest.deposit_nectar()
+            self.confidence = int(self.clock * Critter.confidence_multiplier)
+            self.move_dir = np.multiply(self.move_dir, -1)
+
+    def is_confident(self):
+        return 0 < self.confidence
+
+    # Incorporates separation steer of boid like behaviour into move_dir
     # defined as the sum of the negative relative distances to all nearby critters
-    def separation(self, weight=1):
+    def separation(self, others, weight=1):
+        if 1 > len(others):
+            return
+
         steer = np.zeros(2)
-        for other in self.like_neighbors():
+        for other in others:
             steer = np.add(steer, np.negative(self.relative_position(other.pos)))
-        
+
         if weight != 1:
             steer = np.multiply(steer, weight)
-        
+
         self.move_dir = np.add(steer, self.move_dir)
-    
+
     # Incorporates alignment
     # defined as the mean of the movement directions of all nearby critters
-    def alignment(self, weight=1):
-        _test = self.like_neighbors()
+    def alignment(self, others, weight=1):
+        if 1 > len(others):
+            return
+
         directions = np.array([
             other.move_dir
             for other
-            in _test
+            in others
         ])
-        
+
         if 0 >= len(directions):
             return
-        
+
         steer = np.mean(directions, 0)
 
         if weight != 1:
             steer = np.multiply(steer, weight)
 
         self.move_dir = np.add(steer, self.move_dir)
-    
+
     # Incorporates cohesion
     # defined as the mean position of all nearby critters
-    def cohesion(self, weight=1):
+    def cohesion(self, others, weight=1):
+        if 1 > len(others):
+            return
+
         positions = np.array([
             self.relative_position(other.pos)
             for other
-            in self.like_neighbors()
+            in others
         ])
-        
+
         if 0 >= len(positions):
             return
-        
+
         steer = np.mean(positions, 0)
 
         if weight != 1:
             steer = np.multiply(steer, weight)
-        
+
         self.move_dir = np.add(steer, self.move_dir)
+
+
+class SocialCritter(Critter):
+
+    def __init__(self, model, nest, sight_range=5):
+        super().__init__(model, nest, sight_range)
+
+    def searching(self):
+        super().searching()
+
+        # If we've started homing, return early
+        if self.state == Critter.HOMING:
+            return
+
+        # If we're confident then we don't care what anyone else is doing
+        if self.is_confident():
+            return
+
+        to_avoid = []
+
+        # Otherwise see what the others are doing
+        for other in self.vision:
+            if other.type != "critter":
+                continue
+
+            # if they're homing, go on the opposite direction to them
+            if other.state == Critter.HOMING:
+                self.confidence = other.clock
+                self.move_dir = np.multiply(other.move_dir, -1)
+                return
+            # if they're confident, follow them
+            elif other.is_confident():
+                self.move_towards(other.pos)
+                return
+            # if they're searching avoid them
+            else:
+                to_avoid.append(other)
+
+        # pass it on to boid logic
+        self.separation(to_avoid)
     
-    # look for flowers in the Critters vision
-    # if one is found, return it
-    def check_for_flowers(self):
-        for n in self.vision:
-            if n.type == "flower":
-                return n
-            
-        return None
-    
-    # take nectar from a flower, and log its position if there is still any nectar remaining
-    def take_and_log_nectar(self, flower):
-        self.last_flower_found_at = self.step_count
-        
-        flower.take_nectar()
-        if 0 < flower.nectar:
-            self.log_flower(flower.pos, flower.nectar)
+    # Critter will move towards the nest, and deposit nectar
+    # then will pick a random direction and enter the wandering state
+    def homing(self):
+        if not self.is_touching(self.nest):
+            self.move_towards(self.nest.pos)
+            self.clock += 1
         else:
-            self.possible_flower = None
-    
-    # Log a position in space where we believe/remember a flower to be, along with how much nectar it's meant to have
-    def log_flower(self, p, n):
-        self.possible_flower = FlowerData(
-            pos=p,
-            nectar=n
-        )
-    
-    # Returns how recently the other has visited a flower, compared to the self
-    # Will be positive if the other has visited a flower MORE recently, otherwise negative
-    def compare(self, other):
-        return other.last_flower_found_at - self.last_flower_found_at
-        
+            self.state = Critter.SEARCHING
+            nest_instructions = self.nest.deposit_nectar(time=self.clock, direction=self.move_dir)
 
-@dataclass
-class FlowerData:
-    pos: tuple
-    nectar: int    
+            # if no instructions, go back in the direction you came from
+            # same if instructions would take longer than our clock (ie food is further away than the source we just visited)
+            if nest_instructions == None or nest_instructions[0] > self.clock:
+                self.confidence = int(self.clock * Critter.confidence_multiplier)
+                self.move_dir = np.multiply(self.move_dir, -1)
+            else:
+                self.confidence = int(nest_instructions[0] * Critter.confidence_multiplier)
+                self.move_dir = nest_instructions[1]  
 
-
-def turning_noise(v):
-    return vector2.rotated(v, np.random.randint(-2, 3))
+def random_turn(v, amount=1):
+    return vector2.rotated(v, np.random.randint(-amount, amount+1))

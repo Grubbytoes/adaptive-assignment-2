@@ -3,7 +3,7 @@ import pygame
 from environment_manager import EnvironmentManager
 from swarm_critters import *
 
-FIELD_SIZE = 160
+FIELD_SIZE = 200
 SCALE = 4
 
 # Pygame
@@ -13,11 +13,11 @@ screen = pygame.display.set_mode((FIELD_SIZE * SCALE, FIELD_SIZE * SCALE))
 ###
 
 def main():
-    _field = Field(FIELD_SIZE, FIELD_SIZE)
+    _field = Field(FIELD_SIZE)
     environment_manager = EnvironmentManager(_field)
     
-    environment_manager.initialize(20)
-    environment_manager.run(100, 10, draw_field)
+    environment_manager.initialize(32, social_critters=True)
+    environment_manager.run_environment(100, 10, draw_field)
     print(environment_manager.save_dump("test"))
 
 
