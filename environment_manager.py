@@ -5,6 +5,8 @@ from swarm_critters import *
 from math import pow, sqrt
 
 RESULTS_FOLDER = "results"
+INITIAL_FLOWER_F = 2
+INITIAL_FLOWER_R = 5
 
 # The job of this script is to take a newly instanced field and fill it with agents (nest, flowers, critters) in such a way
 # that is conducive to the rest of our experiment
@@ -13,14 +15,9 @@ class EnvironmentManager:
     def __init__(self, field):
         self.field: Field = field
         self.is_initialized = False
-        
-        self.flower_frequency = None
-        self.flower_richness = None
     
-    def initialize(self, critter_count=8, flower_frequency=0.2, flower_richness=5):
-        self.flower_frequency = flower_frequency
-        self.flower_richness = flower_richness
-        
+    def initialize(self, critter_count=8):
+       
         if self.is_initialized:
             print(f"WARNING: {self} is already initialized")
             return
@@ -29,8 +26,8 @@ class EnvironmentManager:
         nest = Nest(self.field)
         self.field.place_agent(
             nest,
-            int(self.field.width / 2),
-            int(self.field.height / 2),
+            int(self.field.size() / 2),
+            int(self.field.size() / 2),
         )
         
         # 2. generate critters around the nest
@@ -44,31 +41,19 @@ class EnvironmentManager:
             self.field.place_agent(new_critter, *pos)
         
         # 3. generate flowers
-        total_field_area = self.field.width * self.field.height
-        for i in range(int(total_field_area * flower_frequency / 50)):
-            self.plant_random_flower(flower_richness)
+        self.field.set_flower_population(
+            INITIAL_FLOWER_F,
+            INITIAL_FLOWER_R
+        )
         
         self.is_initialized = True
-
-    def plant_random_flower(self, flower_richness):
-        new_flower = Flower(self.field, flower_richness)
-        flower_position = self.random_position()
-        self.field.place_agent(new_flower, *flower_position)
     
-    def run(self, cycle_length, cycles, field_callback = None):
+    def run_environment(self, cycle_length, cycles, field_callback = None):
         if not self.is_initialized:
             return
         
         self.get_nest().cycle_length = cycle_length
         self.field.run_for(cycles * cycle_length, field_callback)
-        
-    def random_position(self):
-        pos = (
-            random.randint(0, self.field.width-1),
-            random.randint(0, self.field.height-1),
-        )
-
-        return pos
     
     def get_critters(self):
         return self.field.agents_by_type(Critter)
