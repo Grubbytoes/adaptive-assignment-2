@@ -73,9 +73,8 @@ class EnvironmentManager:
     def save_dump(self, file_name):
         file = open(f"{RESULTS_FOLDER}/{file_name}", 'w')
         return json.dump(
+            #! OOPS I BROKE IT!!
             {
-                "flower frequency": self.flower_frequency,
-                "flower richness": self.flower_richness,
                 "nectar per cycle": self.get_nest().nectar_per_cycle
             },
             file

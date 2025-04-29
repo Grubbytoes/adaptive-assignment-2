@@ -20,13 +20,14 @@ class Nest(FieldAgent):
         super().step()
     
         if self.step_count % self.cycle_length == self.cycle_length-1:
-            self.nectar_per_cycle.append(self.nectar)
-            print(self.nectar_per_cycle)
-            
+            self.nectar_per_cycle.append(self.nectar)            
     
     def deposit_nectar(self, time=0, direction=None):
         # Takes nectar deposited by a critter
         self.nectar += 1
+        # Quid pro quo, if no useful information is deposited, none is given back
+        if (time <= 0) or (direction is None):
+            return None
         
         # enqueue
         self.pheromone_queue.append((time, np.multiply(direction, -1)))

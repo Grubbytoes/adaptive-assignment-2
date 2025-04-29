@@ -72,23 +72,14 @@ class Critter(FieldAgent):
     # Critter will move towards the nest, and deposit nectar
     # then will pick a random direction and enter the wandering state
     def homing(self):
-        if self.is_touching(self.nest):
-            # TODO
-            self.state = Critter.SEARCHING
-            nest_instructions = self.nest.deposit_nectar(time=self.clock, direction=self.move_dir)
-
-            # if no instructions, go back in the direction you came from
-            # same if instructions would take longer than our clock (ie food is further away than the source we just visited)
-            if nest_instructions == None or nest_instructions[0] > self.clock:
-                self.confidence = int(self.clock * Critter.confidence_multiplier)
-                self.move_dir = np.multiply(self.move_dir, -1)
-            else:
-                self.confidence = int(nest_instructions[0] * Critter.confidence_multiplier)
-                self.move_dir = nest_instructions[1]          
-
-        else:
+        if not self.is_touching(self.nest):
             self.move_towards(self.nest.pos)
             self.clock += 1
+        else:
+            self.state = Critter.SEARCHING
+            self.nest.deposit_nectar()
+            self.confidence = int(self.clock * Critter.confidence_multiplier)
+            self.move_dir = np.multiply(self.move_dir, -1)
 
     def is_confident(self):
         return 0 < self.confidence
@@ -181,8 +172,10 @@ class SocialCritter(Critter):
             # if they're homing, go on the opposite direction to them
             if other.state == Critter.HOMING:
                 to_retrace.append(other)
+            # if they're confident, follow them
             elif other.is_confident():
                 to_follow.append(other)
+            # if they're searching avoid them
             else:
                 to_avoid.append(other)
 
@@ -190,6 +183,25 @@ class SocialCritter(Critter):
         self.alignment(to_retrace, -1)
         self.cohesion(to_follow)
         self.separation(to_avoid)
+    
+    # Critter will move towards the nest, and deposit nectar
+    # then will pick a random direction and enter the wandering state
+    def homing(self):
+        if not self.is_touching(self.nest):
+            self.move_towards(self.nest.pos)
+            self.clock += 1
+        else:
+            self.state = Critter.SEARCHING
+            nest_instructions = self.nest.deposit_nectar(time=self.clock, direction=self.move_dir)
+
+            # if no instructions, go back in the direction you came from
+            # same if instructions would take longer than our clock (ie food is further away than the source we just visited)
+            if nest_instructions == None or nest_instructions[0] > self.clock:
+                self.confidence = int(self.clock * Critter.confidence_multiplier)
+                self.move_dir = np.multiply(self.move_dir, -1)
+            else:
+                self.confidence = int(nest_instructions[0] * Critter.confidence_multiplier)
+                self.move_dir = nest_instructions[1]  
 
 def random_turn(v, amount=1):
     return vector2.rotated(v, np.random.randint(-amount, amount+1))
