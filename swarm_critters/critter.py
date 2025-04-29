@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from mymathstuff import vector2
 from .field_agent import FieldAgent
 
-class LonelyCritter(FieldAgent):
+class Critter(FieldAgent):
     colour = "gold"
     type = "critter"
     confidence_multiplier = 1.2
@@ -20,7 +20,7 @@ class LonelyCritter(FieldAgent):
         self.vision = []
         self.move_dir = vector2.rand()
         self.nest = nest
-        self.state = LonelyCritter.SEARCHING
+        self.state = Critter.SEARCHING
         
         # Hugo's algorithm
         self.confidence = 0
@@ -34,13 +34,13 @@ class LonelyCritter(FieldAgent):
         self.vision.extend(self.field_neighbors(self.sight_range))
     
         # state behaviour
-        if self.state == LonelyCritter.HOMING:
+        if self.state == Critter.HOMING:
             self.homing()
-        elif self.state == LonelyCritter.SEARCHING:
+        elif self.state == Critter.SEARCHING:
             self.searching()
         else:
             # if we've somehow entered a bad state, return to the searching state
-            self.state = LonelyCritter.SEARCHING
+            self.state = Critter.SEARCHING
                 
         # normalize, and turning noise, and move
         self.move_dir = random_turn(vector2.normalized(self.move_dir))
@@ -58,13 +58,14 @@ class LonelyCritter(FieldAgent):
             if self.is_touching(other):
                 other.take_nectar()
                 self.clock = 0
-                self.state = LonelyCritter.HOMING
+                self.state = Critter.HOMING
+                return
             else:
                 self.move_towards(other.pos)
 
         # base
         if self.confidence <= 0:
-            self.move_dir = random_turn(self.move_dir, LonelyCritter.searching_turn_angle)           
+            self.move_dir = random_turn(self.move_dir, Critter.searching_turn_angle)           
         else:
             self.confidence = max(0, self.confidence - 1)   
 
@@ -73,16 +74,22 @@ class LonelyCritter(FieldAgent):
     def homing(self):
         if self.is_touching(self.nest):
             self.nest.deposit_nectar(self, time=self.clock)            
-            self.state = LonelyCritter.SEARCHING
+            self.state = Critter.SEARCHING
             self.move_dir = np.multiply(self.move_dir, -1)
-            self.confidence = int(self.clock * LonelyCritter.confidence_multiplier)
+            self.confidence = int(self.clock * Critter.confidence_multiplier)
         else:
             self.move_towards(self.nest.pos)
             self.clock += 1
+        
+    def is_confident(self):
+        return 0 < self.confidence
     
     # Incorporates separation steer of boid like behaviour into move_dir 
     # defined as the sum of the negative relative distances to all nearby critters
     def separation(self, others, weight=1):
+        if 1 > len(others):
+            return
+        
         steer = np.zeros(2)
         for other in others:
             steer = np.add(steer, np.negative(self.relative_position(other.pos)))
@@ -95,6 +102,9 @@ class LonelyCritter(FieldAgent):
     # Incorporates alignment
     # defined as the mean of the movement directions of all nearby critters
     def alignment(self, others, weight=1):
+        if 1 > len(others):
+            return
+        
         directions = np.array([
             other.move_dir
             for other
@@ -114,6 +124,9 @@ class LonelyCritter(FieldAgent):
     # Incorporates cohesion
     # defined as the mean position of all nearby critters
     def cohesion(self, others, weight=1):
+        if 1 > len(others):
+            return        
+
         positions = np.array([
             self.relative_position(other.pos)
             for other
@@ -130,6 +143,44 @@ class LonelyCritter(FieldAgent):
         
         self.move_dir = np.add(steer, self.move_dir)
 
+
+class SocialCritter(Critter):
+    
+    def __init__(self, model, nest, sight_range=5):
+        super().__init__(model, nest, sight_range)
+    
+    def searching(self):
+        super().searching()
+        
+        # If we've started homing, return early
+        if self.state == Critter.HOMING:
+            return
+        
+        # If we're confident then we don't care what anyone else is doing
+        if self.is_confident():
+            return
+        
+        to_retrace = []
+        to_follow = []
+        to_avoid = []
+        
+        # Otherwise see what the others are doing
+        for other in self.vision:
+            if other.type != "critter":
+                continue
+            
+            # if they're homing, go on the opposite direction to them
+            if other.state == Critter.HOMING:
+                to_retrace.append(other)
+            elif other.is_confident():
+                to_follow.append(other)
+            else:
+                to_avoid.append(other)
+        
+        # pass it on to boid logic
+        self.alignment(to_retrace, -1)
+        self.cohesion(to_follow)
+        self.separation(to_avoid)         
 
 def random_turn(v, amount=1):
     return vector2.rotated(v, np.random.randint(-amount, amount+1))

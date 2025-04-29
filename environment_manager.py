@@ -16,7 +16,7 @@ class EnvironmentManager:
         self.field: Field = field
         self.is_initialized = False
     
-    def initialize(self, critter_count=8):
+    def initialize(self, critter_count=8, social_critters=True):
        
         if self.is_initialized:
             print(f"WARNING: {self} is already initialized")
@@ -32,12 +32,18 @@ class EnvironmentManager:
         
         # 2. generate critters around the nest
         max_nest_distance = int(sqrt(critter_count))
+        new_critter: Critter
         for i in range(critter_count):
             pos = (
                 random.randint(nest.pos[0] - max_nest_distance, nest.pos[0] + max_nest_distance),
                 random.randint(nest.pos[1] - max_nest_distance, nest.pos[1] + max_nest_distance)
             )
-            new_critter = LonelyCritter(self.field, nest)
+            
+            if social_critters:
+                new_critter = SocialCritter(self.field, nest)
+            else:
+                new_critter = Critter(self.field, nest)
+            
             self.field.place_agent(new_critter, *pos)
         
         # 3. generate flowers
@@ -56,7 +62,7 @@ class EnvironmentManager:
         self.field.run_for(cycles * cycle_length, field_callback)
     
     def get_critters(self):
-        return self.field.agents_by_type(LonelyCritter)
+        return self.field.agents_by_type(Critter)
     
     def get_flowers(self):
         return self.field.agents_by_type(Flower)
