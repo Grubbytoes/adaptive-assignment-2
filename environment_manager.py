@@ -14,48 +14,19 @@ SEASON_PARAMS = (
     (.5, 25) # WINTER
 )
 
+def feild_size(c):
+    size = int(sqrt(c) * 50.63)
+    return size
+
 # This script runs the experiment with a single set of parameters
 
 class EnvironmentManager:
-    def __init__(self, size, critter_count=8, social_critters=False):
-        self.field: Field = Field(size)
+    def __init__(self, critter_count=8, social_critters=False):
+        self.field: Field = Field(feild_size(critter_count))
         self.is_initialized = False
         self.social_critters = social_critters
         
-        self.initialize(critter_count, social_critters)
-    
-    def initialize(self, critter_count=8, social_critters=True):
-       
-        if self.is_initialized:
-            print(f"WARNING: {self} is already initialized")
-            return
-        
-        # 1. place the nest in the center
-        nest = Nest(self.field, cycle_length=CYCLE_LENGTH, pheromone_queue_len=12)
-        self.field.place_agent(
-            nest,
-            int(self.field.size() / 2),
-            int(self.field.size() / 2),
-        )
-        
-        # 2. generate critters around the nest
-        max_nest_distance = int(sqrt(critter_count))
-        new_critter: Critter
-        for i in range(critter_count):
-            pos = (
-                random.randint(nest.pos[0] - max_nest_distance, nest.pos[0] + max_nest_distance),
-                random.randint(nest.pos[1] - max_nest_distance, nest.pos[1] + max_nest_distance)
-            )
-            
-            if social_critters:
-                new_critter = SocialCritter(self.field, nest)
-            else:
-                new_critter = Critter(self.field, nest)
-            
-            self.field.place_agent(new_critter, *pos)
-        
-        # Ready to go!
-        self.is_initialized = True
+        self._initialize(critter_count, social_critters)
     
     def run_environment(self, field_callback = None):
         if not self.is_initialized:
@@ -92,3 +63,36 @@ class EnvironmentManager:
             },
             file
         )
+       
+    def _initialize(self, critter_count=8, social_critters=True):
+       
+        if self.is_initialized:
+            print(f"WARNING: {self} is already initialized")
+            return
+        
+        # 1. place the nest in the center
+        nest = Nest(self.field, cycle_length=CYCLE_LENGTH, pheromone_queue_len=12)
+        self.field.place_agent(
+            nest,
+            int(self.field.size() / 2),
+            int(self.field.size() / 2),
+        )
+        
+        # 2. generate critters around the nest
+        max_nest_distance = int(sqrt(critter_count))
+        new_critter: Critter
+        for i in range(critter_count):
+            pos = (
+                random.randint(nest.pos[0] - max_nest_distance, nest.pos[0] + max_nest_distance),
+                random.randint(nest.pos[1] - max_nest_distance, nest.pos[1] + max_nest_distance)
+            )
+            
+            if social_critters:
+                new_critter = SocialCritter(self.field, nest)
+            else:
+                new_critter = Critter(self.field, nest)
+            
+            self.field.place_agent(new_critter, *pos)
+        
+        # Ready to go!
+        self.is_initialized = True
