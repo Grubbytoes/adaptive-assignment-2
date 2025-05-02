@@ -1,5 +1,13 @@
+import json
 import matplotlib.pyplot as plt
 
-plt.plot([1, 2, 3, 4])
-plt.ylabel('some numbers')
-plt.show()
+from itertools import product
+
+sizes = ["small", "medium", "large"]
+types = ["lonely", "social"]
+
+for size, type in product(sizes, types):
+    filename = f"{size}.{type}.json"
+    data = json.load(open("results/"+filename, 'r'))
+    
+    # plotting here
