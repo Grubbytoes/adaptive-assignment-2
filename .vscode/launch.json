@@ -10,6 +10,13 @@
             "request": "launch",
             "program": "main.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Plot",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "plotter.py",
+            "console": "integratedTerminal"
         }
     ]
 }

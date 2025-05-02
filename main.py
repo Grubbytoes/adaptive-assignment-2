@@ -14,12 +14,14 @@ screen = pygame.display.set_mode((FIELD_SIZE * SCALE, FIELD_SIZE * SCALE))
 # experiment params
 CRITTER_COUNTS = {
     "small": 10,
-    # "medium": 40,
-    # "large": 160
+    "medium": 40,
+    "large": 160
 }
 
 def main():
     for key, item in CRITTER_COUNTS.items():
+        print(f"now running {key}")
+        
         env_lonely = EnvironmentManager(item, social_critters=False)
         env_social = EnvironmentManager(item, social_critters=True)
         
